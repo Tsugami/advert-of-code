@@ -17,13 +17,15 @@ impl BattleResult {
     }
 
     pub fn battle(user: RockPaperScissor, enemy: RockPaperScissor) -> Self {
-        match (user, enemy) {
-            (RockPaperScissor::Paper, RockPaperScissor::Rock)
-            | (RockPaperScissor::Rock, RockPaperScissor::Scissors)
-            | (RockPaperScissor::Scissors, RockPaperScissor::Paper) => Self::Win,
-            (x, y) if x == y => Self::Draw,
-            _ => Self::Wrong,
+        if user == enemy.weak_against() {
+            return Self::Win;
         }
+
+        if user == enemy {
+            return Self::Draw;
+        }
+
+        return Self::Wrong;
     }
 
     pub fn convert_to_part_2_rule(user: RockPaperScissor) -> Self {
@@ -51,7 +53,7 @@ impl RockPaperScissor {
         }
     }
 
-    fn weak_against(self) -> Self {
+    pub fn weak_against(self) -> Self {
         match self {
             Self::Paper => Self::Scissors,
             Self::Rock => Self::Paper,
@@ -59,7 +61,7 @@ impl RockPaperScissor {
         }
     }
 
-    fn strong_against(self) -> Self {
+    pub fn strong_against(self) -> Self {
         match self {
             Self::Paper => Self::Rock,
             Self::Rock => Self::Scissors,
