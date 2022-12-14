@@ -38,7 +38,7 @@ fn parse(contents: String, f: fn(Pairs) -> bool) -> i64 {
     }
 
     fn parse_pairs(pairs: &str) -> Option<Pairs> {
-        let (right, left) = pairs.split_once(",")?;
+        let (right, left) = pairs.trim().split_once(",")?;
 
         let right = parse_sections(right)?;
         let left = parse_sections(left)?;
@@ -49,14 +49,9 @@ fn parse(contents: String, f: fn(Pairs) -> bool) -> i64 {
     contents
         .lines()
         .filter(|str| !str.is_empty())
-        .map(|str| str.trim())
-        .fold(0 as i64, |acc, str| {
-            if f(parse_pairs(str).unwrap()) {
-                acc + 1
-            } else {
-                acc
-            }
-        })
+        .map(|str| parse_pairs(str).unwrap())
+        .filter(|pairs| f(*pairs))
+        .count() as i64
 }
 
 #[cfg(test)]
