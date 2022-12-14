@@ -3,9 +3,11 @@ fn main() {
 
     let file_path = env::args().nth(1).unwrap_or("input.txt".to_string());
     let contents = fs::read_to_string(file_path).unwrap();
-    let result = process_groups(contents);
+    let result = process(contents.clone());
+    let result_groups = process_groups(contents);
 
-    println!("Hello, world! {result:?}");
+    println!("What is the sum of the priorities of the replicated items? {result}");
+    println!("What is the sum of the insignia of each group of three elves? {result_groups}");
 }
 
 fn find_replicated_char(right: &str, left: &str) -> Option<char> {
@@ -77,7 +79,6 @@ mod tests {
     }
 
     #[test]
-
     fn test_find_replicated_char() {
         assert_eq!(
             find_replicated_char("vJrwpWtwJgWr", "hcsFMMfFFhFp"),
@@ -87,7 +88,6 @@ mod tests {
     }
 
     #[test]
-
     fn test_get_char_priority() {
         assert_eq!(get_char_priority('p'), Some(16));
         assert_eq!(get_char_priority('L'), Some(38));
