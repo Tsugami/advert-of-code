@@ -1,0 +1,1 @@
+/home/yslan/dev/advert-of-code/2022/03-rucksack-reorganization/rucksack_reorganization/target/debug/rucksack_reorganization: /home/yslan/dev/advert-of-code/2022/03-rucksack-reorganization/rucksack_reorganization/src/main.rs
