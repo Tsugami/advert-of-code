@@ -10,13 +10,14 @@ fn main() {
     println!("part-2 result: {result_part2}");
 }
 
-type Section = ((i64, i64), (i64, i64));
+type Section = (i64, i64);
+type Pairs = (Section, Section);
 
-fn any_overlaps_sections((right, left): Section) -> bool {
+fn any_overlaps_sections((right, left): Pairs) -> bool {
     right.0 <= left.1 && right.1 >= left.0
 }
 
-fn fully_contains_sections((right, left): Section) -> bool {
+fn fully_contains_sections((right, left): Pairs) -> bool {
     (right.0 >= left.0 && right.1 <= left.1) || (left.0 >= right.0 && left.1 <= right.1)
 }
 
@@ -28,24 +29,21 @@ fn fully_contains_pairs(contents: String) -> i64 {
     parse(contents, fully_contains_sections)
 }
 
-fn parse(contents: String, f: fn(Section) -> bool) -> i64 {
-    fn pairs_to_section_tuple(pairs: &str) -> Section {
-        let iter: Vec<Vec<i64>> = pairs
-            .split(",")
-            .map(|str| {
-                str.split('-')
-                    .map(|str| str.trim().parse::<i64>().unwrap())
-                    .collect::<Vec<i64>>()
-            })
-            .collect();
+fn parse(contents: String, f: fn(Pairs) -> bool) -> i64 {
+    fn parse_sections(unparsed_section: &str) -> Option<Section> {
+        let (start, end) = unparsed_section.split_once('-')?;
+        let to_number = |str: &str| str.trim().parse::<i64>().ok();
 
-        let right = iter[0].clone();
-        let left = iter[1].clone();
+        Some((to_number(start)?, to_number(end)?))
+    }
 
-        let right = (right[0], right[1]);
-        let left = (left[0], left[1]);
+    fn parse_pairs(pairs: &str) -> Option<Pairs> {
+        let (right, left) = pairs.split_once(",")?;
 
-        (right, left)
+        let right = parse_sections(right)?;
+        let left = parse_sections(left)?;
+
+        Some((right, left))
     }
 
     contents
@@ -53,7 +51,7 @@ fn parse(contents: String, f: fn(Section) -> bool) -> i64 {
         .filter(|str| !str.is_empty())
         .map(|str| str.trim())
         .fold(0 as i64, |acc, str| {
-            if f(pairs_to_section_tuple(str)) {
+            if f(parse_pairs(str).unwrap()) {
                 acc + 1
             } else {
                 acc
