@@ -1,127 +1,168 @@
-// uma stack é movida para uma diferente stack
+#[macro_use]
+extern crate prettytable;
 
-use std::{fmt::Error, str::FromStr};
+use std::{env, error, fs, str::FromStr, thread, time};
 
 fn main() {
-    println!("Hello, world!");
-}
+    let file_path = env::args().nth(1).unwrap_or("input.txt".to_string());
 
-type Grid = Vec<Vec<String>>;
+    println!("part_1: {:?}", part_1_from_file_path(file_path));
+}
 
 #[derive(Debug)]
 struct Procedure {
-    from: i64,
-    to: i64,
-    count: i64,
+    count: u32,
+    from: u32,
+    to: u32,
 }
 
-enum CratesError {
-    InvalidProcedureLineFormat,
-}
+impl FromStr for Procedure {
+    type Err = Box<dyn error::Error>;
 
-impl Procedure {
-    fn from_str(s: &str) -> Option<Procedure> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim();
 
-        use lazy_static::lazy_static;
-        use regex::Regex;
+        let count = s
+            .chars()
+            .take_while(|&c| c != 'f')
+            .filter(|c| c.is_digit(10))
+            .flat_map(|c| c.to_digit(10))
+            .fold(0, |acc, x| acc + x);
 
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"move\s(\w*)\sfrom\s(\w*)\sto\s(\w*)").unwrap();
+        let from = s
+            .chars()
+            .skip_while(|&c| c != 'f')
+            .take_while(|&c| c != 't')
+            .filter(|c| c.is_digit(10))
+            .flat_map(|c| c.to_digit(10))
+            .fold(0, |acc, x| acc + x);
+
+        let to = s
+            .chars()
+            .skip_while(|&c| c != 't')
+            .filter(|c| c.is_digit(10))
+            .flat_map(|c| c.to_digit(10))
+            .fold(0, |acc, x| acc + x);
+
+        Ok(Procedure { count, from, to })
+    }
+}
+
+#[derive(Clone, Debug)]
+struct Creates {
+    stack: Vec<Vec<char>>,
+}
+
+impl Creates {
+    pub fn reorganize(mut self, procedures: Vec<Procedure>) -> String {
+        procedures.iter().for_each(|p| {
+            println!("procedure: {p:?}");
+
+            for _ in 0..p.count {
+                let from_stack = self.stack.get_mut((p.from - 1) as usize).unwrap();
+
+                if let Some(id) = from_stack.pop() {
+                    let to_stack = self.stack.get_mut((p.to - 1) as usize).unwrap();
+
+                    to_stack.push(id);
+                }
+            }
+
+            let ten_millis = time::Duration::from_millis(1000);
+            thread::sleep(ten_millis);
+
+            self.print();
+        });
+
+        self.top()
+    }
+
+    pub fn top(self) -> String {
+        self.stack.iter().flat_map(|v| v.last()).collect::<String>()
+    }
+
+    pub fn print(&self) {
+        use prettytable::{Cell, Table};
+
+        let mut table = Table::new();
+        let len = self.stack.iter().fold(0, |acc, crates| {
+            if crates.len() > acc {
+                crates.len()
+            } else {
+                acc
+            }
+        });
+
+        for i in 0..len {
+            let mut row = row![];
+            for creates in self.stack.clone() {
+                let id = creates.get(i).unwrap_or(&'-');
+                row.add_cell(Cell::new(id.to_string().as_str()));
+            }
+
+            table.add_row(row);
         }
 
-        let caps = RE.captures(s)?;
-        let count = caps.get(0)?.as_str().parse::<i64>().ok()?;
-        let from = caps.get(1)?.as_str().parse::<i64>().ok()?;
-        let to = caps.get(2)?.as_str().parse::<i64>().ok()?;
-
-        Some(Procedure { from, to, count })
+        table.printstd()
     }
 }
 
-// impl FromStr for Procedure {
-//     type Err = CratesError;
+impl FromStr for Creates {
+    type Err = Box<dyn error::Error>;
 
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut lines = s.lines().rev();
 
-//         // if !s.starts_with("move") {
-//         //     return Err("invalid pattern: \"move $ from $ to $\"".to_string());
-//         // }
+        let mut stack: Vec<Vec<char>> = lines
+            .next()
+            .ok_or("error parsing creates")?
+            .split_whitespace()
+            .map(|_| Vec::new())
+            .collect();
 
-//         let d: Option<(i64, i64, i64)> = {
+        lines.for_each(|line| {
+            line.chars()
+                .skip(1)
+                .step_by(4)
+                .enumerate()
+                .for_each(|(idx, c)| {
+                    if c.is_alphabetic() {
+                        stack[idx].push(c);
+                    }
+                })
+        });
 
-//             (count, from, to)
-//         };
+        Ok(Self { stack })
+    }
+}
 
-//         println!("alo {s}");
-//         return todo!();
-//         // return Err("ops".to_string());
-//         Ok(Self {
-//             count: 1,
-//             from: 1,
-//             to: 1,
-//         })
-//     }
-// }
+fn process_part_1(contents: String) -> Result<String, &'static str> {
+    let (crates_drawing, procedures_drawing) =
+        contents.split_once("\n\n").ok_or("Error parsing drawing")?;
 
-fn separate_crates_and_produce(
-    contents: String,
-) -> Result<(Vec<String>, Vec<String>), &'static str> {
-    let mut crates = Vec::new();
-    let mut procedure = Vec::new();
-
-    let mut iter = contents
+    let procedures: Vec<Procedure> = procedures_drawing
         .lines()
-        .filter(|str| !str.is_empty())
-        .collect::<Vec<&str>>();
+        .flat_map(|line| line.parse())
+        .collect();
 
-    iter.reverse();
+    let creates = crates_drawing.parse::<Creates>().unwrap();
 
-    for i in iter {
-        let a = Procedure::from_str(i);
-        println!("{i} --- {a:?}");
-        // if i.trim().is_empty() && is_crates_lines && !crates.is_empty() {
-        //     is_crates_lines = false;
-        // } else if i.trim(). {
-
-        // } else if is_crates_lines {
-        //     crates.push(i.to_string())
-        // } else {
-        //     procedure.push(i.trim().to_string())
-        // }
-    }
-    println!("{crates:?}");
-    // if is_crates_lines {
-    //     return Err("must have an empty line to separate the crates and the procedure");
-    // }
-
-    Ok((crates, procedure))
+    Ok(creates.reorganize(procedures))
 }
 
-fn process(contents: String) -> Result<String, &'static str> {
-    let (crates, procedure) = separate_crates_and_produce(contents)?;
-    println!("crates: {crates:?}\n procedure: {procedure:?}");
-    Ok("".to_string())
+fn part_1_from_file_path(file_path: String) -> Result<String, &'static str> {
+    process_part_1(fs::read_to_string(file_path).map_err(|_path| "a")?)
 }
 
 #[cfg(test)]
 mod test {
-    use crate::process;
+    use crate::part_1_from_file_path;
 
     #[test]
     fn test_example() {
-        let input = "
-        [D]    
-        [N] [C]    
-        [Z] [M] [P]
-        1   2   3 
-        
-        move 1 from 2 to 1
-        move 3 from 1 to 3
-        move 2 from 2 to 1
-        move 1 from 1 to 2
-        ";
-
-        assert_eq!(process(input.to_owned()), Ok("CMZ".to_string()))
+        assert_eq!(
+            part_1_from_file_path("./example.txt".to_string()),
+            Ok("CMZ".to_string())
+        )
     }
 }
