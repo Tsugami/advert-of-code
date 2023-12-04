@@ -22,23 +22,23 @@ fn main() {
     println!("Result 2: {}", res2);
 }
 
-fn part_1<P>(filename: P) -> Result<i32>
+fn part_1<P>(filename: P) -> Result<usize>
 where
     P: AsRef<Path>,
 {
     Ok(read_lines(filename)?
         .filter_map(Result::ok)
-        .map(|line| {
-            line.chars()
-                .filter(|char| char.is_numeric())
-                .map(|char| char.to_digit(16).unwrap())
-                .collect::<Vec<u32>>()
+        .filter_map(|line| {
+            let digits = line
+                .chars()
+                .filter(|char| char.is_ascii_digit())
+                .collect::<Vec<_>>();
+
+            format!("{}{}", digits.first()?, digits.last()?)
+                .parse::<usize>()
+                .ok()
         })
-        .map(|digits| {
-            let val = format!("{}{}", digits.first().unwrap(), digits.last().unwrap());
-            val.parse::<i32>().unwrap()
-        })
-        .sum::<i32>())
+        .sum())
 }
 
 fn extract_numbers(line: String) -> Vec<u32> {
@@ -72,7 +72,7 @@ fn extract_numbers(line: String) -> Vec<u32> {
     acc
 }
 
-fn part_2<P>(filename: P) -> Result<i32>
+fn part_2<P>(filename: P) -> Result<usize>
 where
     P: AsRef<Path>,
 {
@@ -81,9 +81,9 @@ where
         .map(extract_numbers)
         .map(|digits| {
             let val = format!("{}{}", digits.first().unwrap(), digits.last().unwrap());
-            val.parse::<i32>().unwrap()
+            val.parse::<usize>().unwrap()
         })
-        .sum::<i32>())
+        .sum::<usize>())
 }
 
 #[test]
