@@ -7,11 +7,8 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let file_path = args.get(1).expect("Please provide a file path");
 
-    let res = part_1(file_path).unwrap();
-    println!("Result 1: {} ", res);
-
-    let res2 = part_2(file_path).unwrap();
-    println!("Result 2: {}", res2);
+    println!("Result 1: {:?} ", part_1(file_path));
+    println!("Result 2: {:?}", part_2(file_path));
 }
 
 fn read_lines<P>(filename: P) -> Result<io::Lines<io::BufReader<File>>>
