@@ -15,14 +15,14 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let file_path = args.get(1).expect("Please provide a file path");
 
-    let res = find_calibration_values(file_path).unwrap();
+    let res = part_1(file_path).unwrap();
     println!("Result 1: {} ", res);
 
-    let res2 = find_calibration_values_2(file_path).unwrap();
+    let res2 = part_2(file_path).unwrap();
     println!("Result 2: {}", res2);
 }
 
-fn find_calibration_values<P>(filename: P) -> Result<i32>
+fn part_1<P>(filename: P) -> Result<i32>
 where
     P: AsRef<Path>,
 {
@@ -72,7 +72,7 @@ fn extract_numbers(line: String) -> Vec<u32> {
     acc
 }
 
-fn find_calibration_values_2<P>(filename: P) -> Result<i32>
+fn part_2<P>(filename: P) -> Result<i32>
 where
     P: AsRef<Path>,
 {
@@ -87,13 +87,13 @@ where
 }
 
 #[test]
-fn aoc_example_works() {
-    let res = find_calibration_values("./example.txt").unwrap();
+fn test_part_1() {
+    let res = part_1("./example.txt").unwrap();
     assert_eq!(res, 142);
 }
 
 #[test]
-fn aoc_input_works() {
-    let res = find_calibration_values_2("./example-2.txt").unwrap();
+fn test_part_2() {
+    let res = part_2("./example-2.txt").unwrap();
     assert_eq!(res, 281);
 }
