@@ -17,7 +17,7 @@ fn main() {
 
     let res = find_calibration_values(file_path).unwrap();
     println!("Result 1: {} ", res);
-    
+
     let res2 = find_calibration_values_2(file_path).unwrap();
     println!("Result 2: {}", res2);
 }
@@ -86,19 +86,14 @@ where
         .sum::<i32>())
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::{find_calibration_values, find_calibration_values_2};
+#[test]
+fn aoc_example_works() {
+    let res = find_calibration_values("./example.txt").unwrap();
+    assert_eq!(res, 142);
+}
 
-    #[test]
-    fn aoc_example_works() {
-        let res = find_calibration_values("./example.txt").unwrap();
-        assert_eq!(res, 142);
-    }
-
-    #[test]
-    fn aoc_input_works() {
-        let res = find_calibration_values_2("./example-2.txt").unwrap();
-        assert_eq!(res, 281);
-    }
+#[test]
+fn aoc_input_works() {
+    let res = find_calibration_values_2("./example-2.txt").unwrap();
+    assert_eq!(res, 281);
 }
