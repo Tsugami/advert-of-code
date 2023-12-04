@@ -3,14 +3,6 @@ use std::fs::File;
 use std::io::{self, BufRead, Result};
 use std::path::Path;
 
-fn read_lines<P>(filename: P) -> Result<io::Lines<io::BufReader<File>>>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
-}
-
 fn main() {
     let args: Vec<String> = env::args().collect();
     let file_path = args.get(1).expect("Please provide a file path");
@@ -20,6 +12,14 @@ fn main() {
 
     let res2 = part_2(file_path).unwrap();
     println!("Result 2: {}", res2);
+}
+
+fn read_lines<P>(filename: P) -> Result<io::Lines<io::BufReader<File>>>
+where
+    P: AsRef<Path>,
+{
+    let file = File::open(filename)?;
+    Ok(io::BufReader::new(file).lines())
 }
 
 fn part_1<P>(filename: P) -> Result<usize>
