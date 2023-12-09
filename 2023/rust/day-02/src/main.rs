@@ -1,25 +1,35 @@
+use std::include_str;
 use std::str::FromStr;
 
 type Result<T> = std::result::Result<T, GameError>;
 
 fn main() {
-    println!("Hello, world!");
+    let input = include_str!("../input.txt");
+
+    let config = GameOptions {
+        red: 12,
+        green: 13,
+        blue: 14,
+    };
+
+    let result = part1(input.to_string(), config);
+    println!("part 1: {:?}", result);
 }
 
-#[derive(Clone)]
+#[derive(PartialEq, Debug, Clone)]
 enum Color {
     Blue,
     Red,
     Green,
 }
 
-#[derive(Clone)]
+#[derive(PartialEq, Debug, Clone)]
 struct Cube {
     color: Color,
     value: usize,
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug, Clone)]
 enum GameError {
     ParseCubeError(String),
     ParseCubeColorError(String),
@@ -40,7 +50,7 @@ impl FromStr for Cube {
         let value = number
             .parse::<usize>()
             .ok()
-            .ok_or(GameError::ParseCubeError(number.to_string()))?;
+            .ok_or(GameError::ParseCubeNumberError(number.to_string()))?;
 
         let color = match color {
             "blue" => Color::Blue,
@@ -53,7 +63,7 @@ impl FromStr for Cube {
     }
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Default)]
 struct GameOptions {
     blue: usize,
     red: usize,
@@ -84,51 +94,43 @@ impl std::ops::Add<Cube> for GameOptions {
 #[derive(PartialEq, Debug, Clone)]
 struct Game {
     number: usize,
-    result: GameOptions,
+    rounds: Vec<GameOptions>,
 }
 
 fn parse_game(game_str: &str) -> Result<Game> {
-    let (gameNumber, rounds) = game_str
+    let (game_number, rounds) = game_str
         .trim()
         .split_once(":")
         .ok_or(GameError::SplitRoundLineError(game_str.to_string()))?;
 
-    let number = gameNumber
+    let number = game_number
         .trim()
         .split_once(" ")
         .and_then(|(_, number)| number.parse::<usize>().ok())
-        .ok_or(GameError::SplitNumberRoundLineError(gameNumber.to_string()))?;
+        .ok_or(GameError::SplitNumberRoundLineError(game_number.to_string()))?;
 
     let rounds = rounds
         .split(";")
         .map(|round| {
-            round
-                .split(",")
-                .map(|cube| Cube::from_str(cube))
-                .collect::<Result<Vec<Cube>>>()
+            round.split(",").map(|cube| Cube::from_str(cube)).try_fold(
+                GameOptions::default(),
+                |mut acc, f| {
+                    if let Ok(cube) = f {
+                        acc = acc + cube;
+                    }
+
+                    Ok(acc)
+                },
+            )
         })
-        .collect::<Result<Vec<Vec<Cube>>>>()?;
+        .collect::<Result<Vec<GameOptions>>>()?;
 
-    let result = rounds.iter().fold(
-        GameOptions {
-            blue: 0,
-            green: 0,
-            red: 0,
-        },
-        |mut game, cubes| {
-            for cube in cubes {
-                game = game + cube.clone();
-            }
-
-            game
-        },
-    );
-
-    Ok(Game { number, result })
+    Ok(Game { number, rounds })
 }
 
-fn part1(input: String, gameConfig: GameOptions) -> Result<usize> {
+fn part1(input: String, game_config: GameOptions) -> Result<usize> {
     let games = input
+        .clone()
         .lines()
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
@@ -138,9 +140,11 @@ fn part1(input: String, gameConfig: GameOptions) -> Result<usize> {
     let result = games
         .iter()
         .filter(|game| {
-            game.result.green <= gameConfig.green
-                && game.result.red <= gameConfig.red
-                && game.result.blue <= gameConfig.blue
+            game.rounds.iter().all(|round| {
+                round.blue <= game_config.blue
+                    && round.red <= game_config.red
+                    && round.green <= game_config.green
+            })
         })
         .fold(0, |acc, cur| cur.number + acc);
 
@@ -176,11 +180,23 @@ fn test_parse_game() {
         parse_game("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green").unwrap(),
         Game {
             number: 1,
-            result: GameOptions {
-                blue: 9,
-                red: 5,
-                green: 4
-            }
+            rounds: vec![
+                GameOptions {
+                    blue: 3,
+                    red: 4,
+                    green: 0
+                },
+                GameOptions {
+                    blue: 6,
+                    red: 1,
+                    green: 2
+                },
+                GameOptions {
+                    blue: 0,
+                    red: 0,
+                    green: 2
+                }
+            ]
         }
     )
 }
