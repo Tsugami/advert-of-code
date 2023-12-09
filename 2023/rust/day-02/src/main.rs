@@ -14,6 +14,9 @@ fn main() {
 
     let result = part1(input.to_string(), config);
     println!("part 1: {:?}", result);
+
+    let result = part2(input.to_string());
+    println!("part 2: {:?}", result);
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -36,6 +39,7 @@ enum GameError {
     ParseCubeNumberError(String),
     SplitRoundLineError(String),
     SplitNumberRoundLineError(String),
+    Part2,
 }
 
 impl FromStr for Cube {
@@ -63,7 +67,7 @@ impl FromStr for Cube {
     }
 }
 
-#[derive(PartialEq, Debug, Clone, Default)]
+#[derive(PartialEq, Debug, Clone, Default, Eq)]
 struct GameOptions {
     blue: usize,
     red: usize,
@@ -107,7 +111,9 @@ fn parse_game(game_str: &str) -> Result<Game> {
         .trim()
         .split_once(" ")
         .and_then(|(_, number)| number.parse::<usize>().ok())
-        .ok_or(GameError::SplitNumberRoundLineError(game_number.to_string()))?;
+        .ok_or(GameError::SplitNumberRoundLineError(
+            game_number.to_string(),
+        ))?;
 
     let rounds = rounds
         .split(";")
@@ -151,6 +157,34 @@ fn part1(input: String, game_config: GameOptions) -> Result<usize> {
     Ok(result)
 }
 
+fn get_high_round(rounds: &Vec<GameOptions>, color: Color) -> Option<GameOptions> {
+    let mut rounds = rounds.clone();
+    rounds.sort_by(|a, b| match color {
+        Color::Blue => b.blue.cmp(&a.blue),
+        Color::Green => b.green.cmp(&a.green),
+        Color::Red => b.red.cmp(&a.red),
+    });
+
+    rounds.get(0).cloned()
+}
+
+fn part2(input: String) -> Result<usize> {
+    input
+        .lines()
+        .map(|line| line.trim())
+        .filter(|line| !line.is_empty())
+        .map_while(|line| parse_game(line).ok())
+        .map_while(|game| {
+            let blue_round = get_high_round(&game.rounds, Color::Blue)?;
+            let green_round = get_high_round(&game.rounds, Color::Green)?;
+            let red_round = get_high_round(&game.rounds, Color::Red)?;
+
+            Some(blue_round.blue * green_round.green * red_round.red)
+        })
+        .reduce(|acc, cur| acc + cur)
+        .ok_or(GameError::Part2)
+}
+
 #[test]
 fn test_part_1() {
     let input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
@@ -172,6 +206,18 @@ fn test_part_1() {
         .unwrap(),
         8
     );
+}
+
+#[test]
+fn test_part_2() {
+    let input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+    Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+    Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+    Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+    Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
+    ";
+
+    assert_eq!(part2(input.to_string()).unwrap(), 2286);
 }
 
 #[test]
